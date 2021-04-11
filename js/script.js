@@ -40,7 +40,7 @@ function getTodaysWeather(cityToSearch)
 // sub function that gets UV exposure; note: I never got the function to properly return a value
 function getUVIndex(lat, lon)
 {
-    var fetchURL = `http://api.openweathermap.org/data/2.5/uvi?appid=${APIkey}&lat=${lat}&lon=${lon}`;
+    var fetchURL = `https://api.openweathermap.org/data/2.5/uvi?appid=${APIkey}&lat=${lat}&lon=${lon}`;
     fetch(fetchURL)
     .then(function(response)
     {
