@@ -1,11 +1,13 @@
 const APIkey = "9be6f9b4f8a5410772929791cbfce1fa"
 var cities = [];
-var UVlight
+var UVlight; // global variable hackiness because I don't have time for proper debugging
 
+// function that fetches the weather for the requested city
 function getTodaysWeather(cityToSearch)
 {
     var fetchURL = "https://api.openweathermap.org/data/2.5/weather?q=" + cityToSearch  + "&appid=" + APIkey + "&units=imperial";
     fetch(fetchURL)
+    //regular fetch call
     .then(function(response)
     {
         if (!response.ok)
@@ -18,11 +20,16 @@ function getTodaysWeather(cityToSearch)
     })
     .then(function(weatherData)
     {
+        // verify the data in the console
         console.log(weatherData);
+        // get the humidity and temp data from the returned object
         var humidity = weatherData.main.humidity;
         var temperature = weatherData.main.temp;
+        // today's date
         var date = new Date().toLocaleDateString()
+        // get the UVIndex
         getUVIndex(weatherData.coord.lat, weatherData.coord.lon);
+        // create today's weather panel with a call to the createTopPanel function and append it 
         forecastEl = createTopPanel(cityToSearch, date, humidity, temperature, UVlight);
         $("#today").append(forecastEl);
 
@@ -30,6 +37,7 @@ function getTodaysWeather(cityToSearch)
 
 )}
 
+// sub function that gets UV exposure; note: I never got the function to properly return a value
 function getUVIndex(lat, lon)
 {
     var fetchURL = `http://api.openweathermap.org/data/2.5/uvi?appid=${APIkey}&lat=${lat}&lon=${lon}`;
@@ -41,13 +49,14 @@ function getUVIndex(lat, lon)
     .then(function(data)
     {
         console.log(data.value);
-        UVlight = data.value;
+        UVlight = data.value; //terrible way to get the uvdata, but for some reason returning data.value ALWAYS will return undefined and this is a hacky solution
     }
 )}
     
-
+// function that fetches the 5 day forecast 
 function getForecast(cityToSearch)
 {
+    // regular fetch call
     var fetchURL = "https://api.openweathermap.org/data/2.5/forecast?q=" + cityToSearch  + "&appid=" +APIkey + "&units=imperial";
     fetch(fetchURL)
         .then(function(response)
@@ -62,8 +71,12 @@ function getForecast(cityToSearch)
         })
         .then(function(weatherData)
         {
+            // verify data 
             console.log(weatherData);
-
+            // header for the forecast 
+            forecastTextEl = $("<h4>", {class: "col-1", text: "5-Day Forecast: "})
+            $('#forecast').append(forecastTextEl);
+            // loop through the 5 days of forecast. creating a weather card for each
             for (var i = 0; i < weatherData.list.length; i++)
             {
                 if (weatherData.list[i].dt_txt.indexOf('15:00:00') !== -1)
@@ -81,34 +94,34 @@ function getForecast(cityToSearch)
 }
 
 
-
-
 function createTopPanel(cityToSearch, date, humidity, temperature, UV)
 {
     var forecastEl = $("<div>", {
         class: "card"
     })
+    // create elements necessary for the top panel and add the appropriate text to them
     var forecastTitle = $("<h4>", {class: "card-title"});
     forecastTitle.text(`${cityToSearch}  (${date})`);
     var tempEl = $("<p>", {class: "card-text"});
     var humidityEl = $("<p>", {class: "card-text"});
     var UVEl = $("<p>", {class: "card-text"});
     var UVbadge = $("<span>", {class: "badge badge-danger"})     
-    tempEl.text(temperature)
-    humidityEl.text(humidity)
+    tempEl.text(`Temp: ${temperature}°F`)
+    humidityEl.text(`Humidity: ${humidity}%`)
     UVbadge.text(`UV Index ${UV}`);
     UVEl.append(UVbadge)
     forecastEl.append(forecastTitle)
     forecastEl.append(tempEl)
     forecastEl.append(humidityEl);
     forecastEl.append(UVEl)
+    // return the top panel
     return forecastEl
 }
 
 function createWeatherPanel(windSpeed, humidity, temperature, image, date)
 {   //containers for the temp panel
     var headerEl = $("<h5>", {class: "card-title"})    
-    cardEl = $("<div>", {class: "card bg-primary"})
+    cardEl = $("<div>", {class: "card bg-primary", id: "weather-card"})
     var bodyEl = $("<div>", {class: "card-body p-2"})
     var columnEl = $("<div>", {class:"col"});
     // create elements to display temperature, humidity and wind
@@ -118,7 +131,7 @@ function createWeatherPanel(windSpeed, humidity, temperature, image, date)
     var humidityEl = $("<p>", {class: "card-text"});
     humidityEl.text("Humidity: " + humidity + "%" );
     var tempEl = $("<p>", {class: "card-text"})
-    tempEl.text("Temp: " + temperature + " F")
+    tempEl.text("Temp: " + temperature + " °F")
     imgEl = $("<img>", {src:"http://openweathermap.org/img/w/" + image + ".png" })
     // put together all the elements
     bodyEl.append(imgEl)
@@ -132,6 +145,7 @@ function createWeatherPanel(windSpeed, humidity, temperature, image, date)
     
 }
 
+// function that retrieves the text from the search box
 function getSearchValue()
 {
     var searchText = $("#search-value").val();
@@ -139,8 +153,10 @@ function getSearchValue()
     return searchText;
 }
 
+// function that appends a city list item to the side bar
 function addCityToList(city)
 {
+    
     var cityAppendEl = $("<li>", {class:"list-group-item list-group-item-action"});
     cityAppendEl.text(city);
     $("#history").append(cityAppendEl);
@@ -148,6 +164,7 @@ function addCityToList(city)
 
 function saveCityToLocalStorage(city)
 {
+    // add the city to the cities array and save it to local storage
     cities.push(city);
     localStorage.setItem("cities", JSON.stringify(cities));
 }
@@ -155,6 +172,7 @@ function saveCityToLocalStorage(city)
 function getCitiesFromLocalStorage()
 {
     var storedCities = JSON.parse(localStorage.getItem("cities"))
+    // set the local cities array to the search history stored in local storage
     if (storedCities != null && storedCities != undefined)
     {
         cities = storedCities;
@@ -163,6 +181,7 @@ function getCitiesFromLocalStorage()
 
 function renderCityElements()
 {
+    // loop through all the saved searches and render them to the page 
     if (cities.length > 0) 
     {
         for (var city of cities)
@@ -178,11 +197,13 @@ function main(cityToSearch)
 {   // completely clear todays weather adn the weather forecast elements
     $("#today").html("");
     $("#forecast").html("");
+    // only search if there is text in the box
     if (cityToSearch != "")
     {
         getTodaysWeather(cityToSearch);
         getForecast(cityToSearch);
 
+        // only save a city to history if it's not already there
         if(cities.indexOf(cityToSearch) === -1)
         {
             addCityToList(cityToSearch);
@@ -192,22 +213,20 @@ function main(cityToSearch)
 
 }
 
+// retrieve and render the search history onto the page
 getCitiesFromLocalStorage();
-renderCityElements()
-
+renderCityElements();
+// execute main function on click of search and clicking history elements
 $("#search-button").on("click" , function(event)
 {
     event.preventDefault();
     var cityToSearch = getSearchValue();
     main(cityToSearch);
-
 });
 
 $("#history").children("li").on("click", function(event)
 {
-    
     cityToSearch = $(this).text();
     console.log(cityToSearch)
     main(cityToSearch)
-
 })
