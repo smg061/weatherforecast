@@ -1,5 +1,7 @@
 const APIkey = "9be6f9b4f8a5410772929791cbfce1fa"
 var cities = [];
+var UVlight
+
 function getTodaysWeather(cityToSearch)
 {
     var fetchURL = "https://api.openweathermap.org/data/2.5/weather?q=" + cityToSearch  + "&appid=" + APIkey + "&units=imperial";
@@ -20,11 +22,27 @@ function getTodaysWeather(cityToSearch)
         var humidity = weatherData.main.humidity;
         var temperature = weatherData.main.temp;
         var date = new Date().toLocaleDateString()
-        forecastEl = createTopPanel(cityToSearch, date, humidity, temperature);
+        getUVIndex(weatherData.coord.lat, weatherData.coord.lon);
+        forecastEl = createTopPanel(cityToSearch, date, humidity, temperature, UVlight);
         $("#today").append(forecastEl);
 
     }
 
+)}
+
+function getUVIndex(lat, lon)
+{
+    var fetchURL = `http://api.openweathermap.org/data/2.5/uvi?appid=${APIkey}&lat=${lat}&lon=${lon}`;
+    fetch(fetchURL)
+    .then(function(response)
+    {
+        return response.json();
+    })
+    .then(function(data)
+    {
+        console.log(data.value);
+        UVlight = data.value;
+    }
 )}
     
 
@@ -63,20 +81,29 @@ function getForecast(cityToSearch)
 }
 
 
-function createTopPanel(cityToSearch, date, humidity, temperature)
+
+
+function createTopPanel(cityToSearch, date, humidity, temperature, UV)
 {
     var forecastEl = $("<div>", {
         class: "card"
     })
     var forecastTitle = $("<h4>", {class: "card-title"});
-    forecastTitle.text(`${cityToSearch}  (${date})`)
-    var tempEl = $("<p>", {class: "card-text"})
-    tempEl.text(humidity + "\n" + temperature)
+    forecastTitle.text(`${cityToSearch}  (${date})`);
+    var tempEl = $("<p>", {class: "card-text"});
+    var humidityEl = $("<p>", {class: "card-text"});
+    var UVEl = $("<p>", {class: "card-text"});
+    var UVbadge = $("<span>", {class: "badge badge-danger"})     
+    tempEl.text(temperature)
+    humidityEl.text(humidity)
+    UVbadge.text(`UV Index ${UV}`);
+    UVEl.append(UVbadge)
     forecastEl.append(forecastTitle)
     forecastEl.append(tempEl)
+    forecastEl.append(humidityEl);
+    forecastEl.append(UVEl)
     return forecastEl
 }
-
 
 function createWeatherPanel(windSpeed, humidity, temperature, image, date)
 {   //containers for the temp panel
@@ -117,14 +144,12 @@ function addCityToList(city)
     var cityAppendEl = $("<li>", {class:"list-group-item list-group-item-action"});
     cityAppendEl.text(city);
     $("#history").append(cityAppendEl);
-
 }
 
 function saveCityToLocalStorage(city)
 {
     cities.push(city);
     localStorage.setItem("cities", JSON.stringify(cities));
-
 }
 
 function getCitiesFromLocalStorage()
@@ -134,7 +159,6 @@ function getCitiesFromLocalStorage()
     {
         cities = storedCities;
     }
-
 }
 
 function renderCityElements()
@@ -146,15 +170,14 @@ function renderCityElements()
             var cityAppendEl = $("<li>", {class:"list-group-item list-group-item-action"});
             cityAppendEl.text(city);
             $("#history").append(cityAppendEl);
-
         }
-
     }
-
 }
 
 function main(cityToSearch)
-{
+{   // completely clear todays weather adn the weather forecast elements
+    $("#today").html("");
+    $("#forecast").html("");
     if (cityToSearch != "")
     {
         getTodaysWeather(cityToSearch);
@@ -175,11 +198,16 @@ renderCityElements()
 $("#search-button").on("click" , function(event)
 {
     event.preventDefault();
-    $("#today").html("");
-    $("#forecast").html("");
-    cityToSearch = getSearchValue();
+    var cityToSearch = getSearchValue();
     main(cityToSearch);
 
 });
 
-$("#history")
+$("#history").children("li").on("click", function(event)
+{
+    
+    cityToSearch = $(this).text();
+    console.log(cityToSearch)
+    main(cityToSearch)
+
+})
