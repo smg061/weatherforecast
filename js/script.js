@@ -30,7 +30,7 @@ function getTodaysWeather(cityToSearch)
         // get the UVIndex
         getUVIndex(weatherData.coord.lat, weatherData.coord.lon);
         // create today's weather panel with a call to the createTopPanel function and append it 
-        forecastEl = createTopPanel(cityToSearch, date, humidity, temperature, UVlight);
+        forecastEl = createTopPanel(cityToSearch, date, humidity, temperature);
         $("#today").append(forecastEl);
 
     }
@@ -49,8 +49,10 @@ function getUVIndex(lat, lon)
     .then(function(data)
     {
         console.log(data.value);
-        UVlight = data.value; //terrible way to get the uvdata, but for some reason returning data.value ALWAYS will return undefined and this is a hacky solution
+        $(".badge").text(`UV index: ${data.value}`)
+        //UVlight = data.value; //terrible way to get the uvdata, but for some reason returning data.value ALWAYS will return undefined and this is a hacky solution
     }
+
 )}
     
 // function that fetches the 5 day forecast 
@@ -74,7 +76,7 @@ function getForecast(cityToSearch)
             // verify data 
             console.log(weatherData);
             // header for the forecast 
-            forecastTextEl = $("<h4>", {class: "col-1", text: "5-Day Forecast: "})
+            forecastTextEl = $("<div>", {class: "card", text: "5-Day Forecast: "})
             $('#forecast').append(forecastTextEl);
             // loop through the 5 days of forecast. creating a weather card for each
             for (var i = 0; i < weatherData.list.length; i++)
@@ -108,7 +110,7 @@ function createTopPanel(cityToSearch, date, humidity, temperature, UV)
     var UVbadge = $("<span>", {class: "badge badge-danger"})     
     tempEl.text(`Temp: ${temperature}°F`)
     humidityEl.text(`Humidity: ${humidity}%`)
-    UVbadge.text(`UV Index ${UV}`);
+    //UVbadge.text(`UV Index ${UV}`);
     UVEl.append(UVbadge)
     forecastEl.append(forecastTitle)
     forecastEl.append(tempEl)
@@ -157,7 +159,7 @@ function getSearchValue()
 function addCityToList(city)
 {
     
-    var cityAppendEl = $("<li>", {class:"list-group-item list-group-item-action"});
+    var cityAppendEl = $("<li>", {class:"list-group-item list-group-item-action", id:"history-item"});
     cityAppendEl.text(city);
     $("#history").append(cityAppendEl);
 }
@@ -171,9 +173,10 @@ function saveCityToLocalStorage(city)
 
 function getCitiesFromLocalStorage()
 {
+    cities = [];
     var storedCities = JSON.parse(localStorage.getItem("cities"))
     // set the local cities array to the search history stored in local storage
-    if (storedCities != null && storedCities != undefined)
+    if (storedCities != undefined)
     {
         cities = storedCities;
     }
@@ -186,7 +189,7 @@ function renderCityElements()
     {
         for (var city of cities)
         {
-            var cityAppendEl = $("<li>", {class:"list-group-item list-group-item-action"});
+            var cityAppendEl = $("<li>", {class:"list-group-item list-group-item-action", id: "history-item"});
             cityAppendEl.text(city);
             $("#history").append(cityAppendEl);
         }
@@ -203,12 +206,7 @@ function main(cityToSearch)
         getTodaysWeather(cityToSearch);
         getForecast(cityToSearch);
 
-        // only save a city to history if it's not already there
-        if(cities.indexOf(cityToSearch) === -1)
-        {
-            addCityToList(cityToSearch);
-            saveCityToLocalStorage(cityToSearch)
-        }
+        
     }
 
 }
@@ -217,16 +215,24 @@ function main(cityToSearch)
 getCitiesFromLocalStorage();
 renderCityElements();
 // execute main function on click of search and clicking history elements
-$("#search-button").on("click" , function(event)
-{
-    event.preventDefault();
-    var cityToSearch = getSearchValue();
-    main(cityToSearch);
-});
 
-$("#history").children("li").on("click", function(event)
+$("#history").children("#history-item").on("click", function(event)
 {
     cityToSearch = $(this).text();
     console.log(cityToSearch)
     main(cityToSearch)
+
 })
+
+$("#search-button").on("click" , function(event)
+{
+    var cityToSearch = getSearchValue();
+    main(cityToSearch);
+    // only save a city to history if it's not already there
+    if(cities.indexOf(cityToSearch) === -1)
+    {
+        addCityToList(cityToSearch);
+        saveCityToLocalStorage(cityToSearch)
+    }
+});
+
