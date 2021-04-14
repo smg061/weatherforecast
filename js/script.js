@@ -234,5 +234,7 @@ $("#search-button").on("click" , function(event)
         addCityToList(cityToSearch);
         saveCityToLocalStorage(cityToSearch)
     }
+    getCitiesFromLocalStorage();
+    renderCityElements();
 });
 
